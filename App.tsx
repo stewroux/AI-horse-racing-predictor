@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import RaceInputForm from './components/RaceInputForm';
 import PredictionResult from './components/PredictionResult';
-import LoadingSpinner from './components/LoadingSpinner';
+import StreamingPrediction from './components/StreamingPrediction';
 import { getRacePrediction } from './services/geminiService';
 import type { RaceInfo, PredictionResultData } from './types';
 
@@ -9,13 +9,17 @@ const App: React.FC = () => {
   const [prediction, setPrediction] = useState<PredictionResultData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [streamingText, setStreamingText] = useState<string>('');
 
   const handlePredict = async (raceInfo: RaceInfo) => {
     setIsLoading(true);
     setError(null);
     setPrediction(null);
+    setStreamingText('');
     try {
-      const result = await getRacePrediction(raceInfo);
+      const result = await getRacePrediction(raceInfo, (chunk) => {
+        setStreamingText((prev) => prev + chunk);
+      });
       setPrediction(result);
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -32,6 +36,7 @@ const App: React.FC = () => {
     setPrediction(null);
     setError(null);
     setIsLoading(false);
+    setStreamingText('');
   }
 
   return (
@@ -59,7 +64,7 @@ const App: React.FC = () => {
             <RaceInputForm onSubmit={handlePredict} isLoading={isLoading} />
         )}
 
-        {isLoading && <LoadingSpinner />}
+        {isLoading && <StreamingPrediction text={streamingText} />}
         
         {error && (
             <div className="text-center bg-red-900/50 border border-red-500 p-6 rounded-lg max-w-md">
@@ -74,7 +79,7 @@ const App: React.FC = () => {
             </div>
         )}
 
-        {prediction && (
+        {prediction && !isLoading && (
             <div className="w-full flex flex-col items-center">
                 <PredictionResult result={prediction} />
                 <button 

@@ -1,121 +1,148 @@
 import { GoogleGenAI } from "@google/genai";
-import type { RaceInfo, PredictionResultData, PredictedHorse } from "../types";
+import type { RaceInfo, PredictionResultData } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+// Per guidelines, API key must be from process.env.API_KEY
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
-const generatePrompt = (raceInfo: RaceInfo): string => {
-  const horseList = raceInfo.horses
-    .map(
-      (h) =>
-        `${h.horseNumber}. ${h.horseName} (騎手: ${h.jockey})\n   - 最近の成績/状態: ${h.performance || '情報なし'}`
-    )
-    .join("\n");
+function buildPrompt(raceInfo: RaceInfo): string {
+  const horseList = raceInfo.horses.map(h => 
+    `- 馬番${h.horseNumber}: ${h.horseName} (騎手: ${h.jockey}, 近走/情報: ${h.performance})`
+  ).join('\n');
 
   return `
-    専門の競馬アナリストとして、以下のレース情報を基に、Web検索を活用して詳細な予測を行ってください。
+あなたはプロの競馬アナリストです。以下のレース情報に基づいて、詳細な競馬予想を生成してください。
+最新のレース結果、馬のコンディション、トラックの状態などの情報をGoogle検索で調査し、その情報源を提示してください。
 
-    ## レース情報
-    - レース名: ${raceInfo.raceName}
-    - 競馬場: ${raceInfo.racecourse}
-    - 距離: ${raceInfo.distance}m
+# レース情報
+- レース名: ${raceInfo.raceName}
+- 競馬場: ${raceInfo.racecourse}
+- 距離: ${raceInfo.distance}m
+- 出走馬リスト:
+${horseList}
 
-    ## 出走馬
-    ${horseList}
+# 指示
+1.  **トップ3の予測**: 上位3頭を予測し、それぞれの馬について以下の情報を含めてください。
+    - \`rank\`: 予測順位 (1, 2, 3)
+    - \`horseName\`: 馬名
+    - \`horseNumber\`: 馬番
+    - \`confidence\`: 予測の信頼度を「高」「中」「低」のいずれかで評価してください。
+    - \`reason\`: その馬を推奨する具体的な理由（過去の成績、コース適性、騎手との相性、最近の調子など）。
+2.  **レース総合分析**: レース全体の展開予測、注目点、波乱の可能性など、総合的な分析を提供してください。
+3.  **出力形式**: 以下のJSON形式で、マークダウンのコードブロック内に厳密に従って出力してください。他のテキストは含めないでください。
 
-    ## あなたのタスク
-    1.  最新の情報（ニュース、馬場状態、馬のコンディション、騎手の成績など）をWebで検索・分析してください。
-    2.  その分析に基づいて、以下の形式で予測を生成してください。
+\`\`\`json
+{
+  "topPicks": [
+    {
+      "rank": 1,
+      "horseName": "馬名",
+      "horseNumber": 1,
+      "confidence": "高",
+      "reason": "理由..."
+    },
+    {
+      "rank": 2,
+      "horseName": "馬名",
+      "horseNumber": 2,
+      "confidence": "中",
+      "reason": "理由..."
+    },
+    {
+      "rank": 3,
+      "horseName": "馬名",
+      "horseNumber": 3,
+      "confidence": "低",
+      "reason": "理由..."
+    }
+  ],
+  "analysis": "総合分析..."
+}
+\`\`\`
+`;
+}
 
-    ## 出力形式
-    絶対に以下の形式を守って、プレーンテキストで出力してください。JSONは使わないでください。
+// Function to extract JSON from a string that might contain markdown backticks or other text
+const extractJson = (text: string): any | null => {
+    const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+    const match = text.match(jsonRegex);
+    let jsonString = '';
 
-    [ANALYSIS_START]
-    ここにレース全体の総合的な分析を記述してください。
-    [ANALYSIS_END]
-
-    [PICKS_START]
-    馬番号 | 馬名 | 信頼度 | 理由
-    --- | --- | --- | ---
-    {馬番号1} | {馬名1} | {信頼度1} | {理由1}
-    {馬番号2} | {馬名2} | {信頼度2} | {理由2}
-    {馬番号3} | {馬名3} | {信頼度3} | {理由3}
-    [PICKS_END]
-
-    - 信頼度は「高」「中」「低」のいずれかを使用してください。
-  `;
+    if (match && match[1]) {
+        jsonString = match[1];
+    } else {
+        const firstBrace = text.indexOf('{');
+        const lastBrace = text.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+            jsonString = text.substring(firstBrace, lastBrace + 1);
+        } else {
+            return null;
+        }
+    }
+    
+    try {
+        return JSON.parse(jsonString);
+    } catch (error) {
+        console.error('Failed to parse extracted JSON string:', jsonString, error);
+        return null;
+    }
 };
 
-// Function to parse the plain text response from the AI
-const parsePredictionResponse = (responseText: string, raceInfo: RaceInfo): Omit<PredictionResultData, 'sources'> => {
-    const analysisMatch = responseText.match(/\[ANALYSIS_START\]([\s\S]*?)\[ANALYSIS_END\]/);
-    const analysis = analysisMatch ? analysisMatch[1].trim() : "分析結果を取得できませんでした。";
+export const getRacePrediction = async (
+  raceInfo: RaceInfo,
+  onChunk: (chunk: string) => void
+): Promise<PredictionResultData> => {
+  try {
+    const model = 'gemini-2.5-flash';
+    const prompt = buildPrompt(raceInfo);
 
-    const picksMatch = responseText.match(/\[PICKS_START\]([\s\S]*?)\[PICKS_END\]/);
-    const topPicks: PredictedHorse[] = [];
+    const streamResult = await ai.models.generateContentStream({
+      model,
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+      },
+    });
 
-    if (picksMatch) {
-        const picksText = picksMatch[1].trim();
-        const lines = picksText.split('\n');
-        // Start from index 2 to skip header and separator
-        for (let i = 2; i < lines.length; i++) {
-            const parts = lines[i].split('|').map(s => s.trim());
-            if (parts.length === 4) {
-                const horseNumber = parseInt(parts[0], 10);
-                const originalHorse = raceInfo.horses.find(h => h.horseNumber === horseNumber);
-
-                if (originalHorse) {
-                    topPicks.push({
-                        rank: topPicks.length + 1,
-                        horseNumber: horseNumber,
-                        horseName: parts[1],
-                        confidence: parts[2],
-                        reason: parts[3],
-                    });
+    let fullText = '';
+    const sources: { uri: string; title: string }[] = [];
+    
+    for await (const chunk of streamResult) {
+        // As per Gemini API guidelines, access the text content via the .text property
+        const text = chunk.text;
+        if (text) {
+            fullText += text;
+            onChunk(text);
+        }
+        
+        const groundingChunks = chunk.candidates?.[0]?.groundingMetadata?.groundingChunks;
+        if (groundingChunks) {
+            for (const gChunk of groundingChunks) {
+                if (gChunk.web && gChunk.web.uri) {
+                    sources.push({ uri: gChunk.web.uri, title: gChunk.web.title || gChunk.web.uri });
                 }
             }
         }
     }
-    
-    if (topPicks.length === 0) {
-        // Fallback in case parsing fails
-        return { analysis: responseText, topPicks: [] };
+
+    const parsedJson = extractJson(fullText);
+
+    if (!parsedJson || !parsedJson.topPicks || !parsedJson.analysis) {
+      throw new Error("AIからの応答を解析できませんでした。予期しない形式のデータが返されました。");
     }
 
-    return { analysis, topPicks };
-};
+    // Deduplicate sources based on URI
+    const uniqueSources = Array.from(new Map(sources.map(item => [item.uri, item])).values());
 
-
-export const getRacePrediction = async (
-  raceInfo: RaceInfo
-): Promise<PredictionResultData> => {
-  try {
-    const prompt = generatePrompt(raceInfo);
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-pro",
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-        temperature: 0.5,
-      },
-    });
-
-    const parsedData = parsePredictionResponse(response.text, raceInfo);
-    
-    const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
-    const sources = groundingMetadata?.groundingChunks
-      ?.map(chunk => chunk.web)
-      .filter((web): web is { uri: string, title: string } => !!web && !!web.uri && !!web.title)
-      .filter((web, index, self) => index === self.findIndex((w) => w.uri === web.uri)) // Deduplicate
-      ?? [];
-
-    return { ...parsedData, sources };
+    return {
+      ...parsedJson,
+      sources: uniqueSources,
+    };
 
   } catch (error) {
-    console.error("Error fetching race prediction:", error);
+    console.error("Error getting race prediction:", error);
     if (error instanceof Error) {
-        throw new Error(`AIからの予測取得に失敗しました: ${error.message}`);
+        throw new Error(`AI予測の生成中にエラーが発生しました: ${error.message}`);
     }
-    throw new Error("AI予測の取得中に不明なエラーが発生しました。");
+    throw new Error("AI予測の生成中に不明なエラーが発生しました。");
   }
 };

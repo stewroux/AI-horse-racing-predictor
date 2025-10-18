@@ -49,8 +49,11 @@ const RaceInputForm: React.FC<RaceInputFormProps> = ({ onSubmit, isLoading }) =>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
-            <label htmlFor="raceName" className="block text-sm font-medium text-gray-300 mb-1">
+            <label htmlFor="raceName" className="flex items-center text-sm font-medium text-gray-300 mb-1">
               レース名
+              <Tooltip text="予測したいレースの正式名称を入力してください。(例: 有馬記念、日本ダービー)">
+                <InfoIcon className="w-4 h-4 ml-1 text-gray-400" />
+              </Tooltip>
             </label>
             <input
               type="text"
@@ -62,8 +65,11 @@ const RaceInputForm: React.FC<RaceInputFormProps> = ({ onSubmit, isLoading }) =>
             />
           </div>
           <div>
-            <label htmlFor="racecourse" className="block text-sm font-medium text-gray-300 mb-1">
+            <label htmlFor="racecourse" className="flex items-center text-sm font-medium text-gray-300 mb-1">
               競馬場
+              <Tooltip text="レースが開催される競馬場の名前を入力してください。(例: 東京競馬場、中山競馬場)">
+                <InfoIcon className="w-4 h-4 ml-1 text-gray-400" />
+              </Tooltip>
             </label>
             <input
               type="text"
@@ -77,7 +83,7 @@ const RaceInputForm: React.FC<RaceInputFormProps> = ({ onSubmit, isLoading }) =>
           <div>
             <label htmlFor="distance" className="flex items-center text-sm font-medium text-gray-300 mb-1">
               距離 (m)
-              <Tooltip text="レースの距離をメートル単位で入力してください。">
+              <Tooltip text="レースの距離をメートル単位で入力します。(例: 芝2500mの場合は「2500」と入力)">
                 <InfoIcon className="w-4 h-4 ml-1 text-gray-400" />
               </Tooltip>
             </label>
@@ -100,7 +106,12 @@ const RaceInputForm: React.FC<RaceInputFormProps> = ({ onSubmit, isLoading }) =>
                 <div key={index} className="p-4 bg-gray-900/50 rounded-md border border-gray-700">
                     <div className="grid grid-cols-12 gap-x-3 gap-y-2 items-center">
                         <div className="col-span-12 sm:col-span-1">
-                            <label className="text-xs text-gray-400">馬番</label>
+                            <label className="flex items-center text-xs text-gray-400">
+                                馬番
+                                <Tooltip text="出走馬のゼッケン番号です。">
+                                    <InfoIcon className="w-3 h-3 ml-1" />
+                                </Tooltip>
+                            </label>
                             <input
                                 type="number"
                                 placeholder="#"
@@ -110,7 +121,12 @@ const RaceInputForm: React.FC<RaceInputFormProps> = ({ onSubmit, isLoading }) =>
                             />
                         </div>
                         <div className="col-span-6 sm:col-span-3">
-                            <label className="text-xs text-gray-400">馬名</label>
+                             <label className="flex items-center text-xs text-gray-400">
+                                馬名
+                                <Tooltip text="出走する競走馬の正式名称を入力してください。">
+                                    <InfoIcon className="w-3 h-3 ml-1" />
+                                </Tooltip>
+                            </label>
                             <input
                                 type="text"
                                 placeholder="馬名"
@@ -120,7 +136,12 @@ const RaceInputForm: React.FC<RaceInputFormProps> = ({ onSubmit, isLoading }) =>
                             />
                         </div>
                         <div className="col-span-6 sm:col-span-3">
-                            <label className="text-xs text-gray-400">騎手</label>
+                             <label className="flex items-center text-xs text-gray-400">
+                                騎手
+                                <Tooltip text="その馬に騎乗する騎手のフルネームを入力してください。">
+                                    <InfoIcon className="w-3 h-3 ml-1" />
+                                </Tooltip>
+                            </label>
                             <input
                                 type="text"
                                 placeholder="騎手"
@@ -132,7 +153,7 @@ const RaceInputForm: React.FC<RaceInputFormProps> = ({ onSubmit, isLoading }) =>
                         <div className="col-span-11 sm:col-span-4">
                             <label className="flex items-center text-xs text-gray-400">
                                 過去の成績・近走の状態
-                                <Tooltip text="前走の結果や最近の調教の様子など、AIの判断材料になる情報を入力してください。">
+                                <Tooltip text="AIの重要な予測材料になります。前走の結果、最近の調子、得意なコースなど、具体的な情報を入力するほど予測精度が向上します。(例: 天皇賞(秋)で1着、調教の動きも抜群)">
                                     <InfoIcon className="w-3 h-3 ml-1" />
                                 </Tooltip>
                             </label>

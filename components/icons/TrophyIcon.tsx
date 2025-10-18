@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface TrophyIconProps {
@@ -6,12 +5,12 @@ interface TrophyIconProps {
 }
 
 const TrophyIcon: React.FC<TrophyIconProps> = ({ className = "w-6 h-6" }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M9 11l3-3m0 0l3 3m-3-3v8m0-13a9 9 0 110 18 9 9 0 010-18z" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M17 8h2a2 2 0 012 2v2a2 2 0 01-2 2h-2m-14 0H5a2 2 0 01-2-2v-2a2 2 0 012-2h2m10 10v-2a2 2 0 00-2-2h-6a2 2 0 00-2 2v2m10 0h-10" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v5m-3-5v5m6-5v5" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 21h14" />
-  </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9a9.75 9.75 0 01-4.874-1.942 1.5 1.5 0 01-.626-2.035l3-7.5a1.5 1.5 0 012.898 0l.22.55a1.5 1.5 0 012.796 0l.22-.55a1.5 1.5 0 012.898 0l3 7.5a1.5 1.5 0 01-.626 2.035A9.75 9.75 0 0116.5 18.75z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 15.75h6" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21.75v-3" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21.75h7.5" />
+    </svg>
 );
 
 export default TrophyIcon;
