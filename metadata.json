@@ -1,0 +1,5 @@
+{
+  "name": "AI Horse Racing Predictor",
+  "description": "An application that uses AI to predict the outcome of horse races based on user-provided information. Get detailed analysis, predictions for the top three horses, and tips on potential dark horses.",
+  "requestFramePermissions": []
+}
