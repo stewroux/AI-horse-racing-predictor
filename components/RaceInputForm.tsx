@@ -21,9 +21,9 @@ const RaceInputForm: React.FC<RaceInputFormProps> = ({ onSubmit, isLoading }) =>
   ]);
 
   const handleHorseChange = (index: number, field: keyof Horse, value: string | number) => {
-    const newHorses = [...horses];
-    (newHorses[index] as any)[field] = value;
-    setHorses(newHorses);
+    setHorses(horses.map((horse, i) =>
+      i === index ? { ...horse, [field]: value } : horse
+    ));
   };
 
   const addHorse = () => {
@@ -40,6 +40,10 @@ const RaceInputForm: React.FC<RaceInputFormProps> = ({ onSubmit, isLoading }) =>
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (horses.length < 2) {
+      alert('出走馬を2頭以上入力してください。');
+      return;
+    }
     const raceInfo: RaceInfo = { raceName, racecourse, distance, horses };
     onSubmit(raceInfo);
   };
@@ -95,6 +99,7 @@ const RaceInputForm: React.FC<RaceInputFormProps> = ({ onSubmit, isLoading }) =>
               className="w-full bg-gray-900 border border-gray-600 rounded-md py-2 px-3 focus:ring-green-500 focus:border-green-500 transition"
               required
               min="800"
+              max="9999"
               step="100"
             />
           </div>
