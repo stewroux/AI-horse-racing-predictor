@@ -95,3 +95,7 @@ npm run dev
 - **その他の問題**:
   - ブラウザの開発者コンソール（Windows: `Ctrl+Shift+I`, Mac: `Cmd+Option+I`）を開き、エラーメッセージを確認してください。
 
+
+## License
+
+This project is licensed under the MIT License — see [LICENSE](./LICENSE).
